@@ -1,6 +1,6 @@
 #!/bin/bash
 # Remove sage from Claude Code and Claude Desktop.
-# Wiki data at ~/sage/ is not touched.
+# Preserves ~/sage/sources/ and ~/sage/wiki/ — all knowledge data is untouched.
 #
 # Usage:
 #   bash uninstall.sh            → global CLAUDE.md
@@ -8,11 +8,17 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 MODE="${1:---global}"
 SKIPPED=()
 REMOVED=()
 
-# ── Claude Code ───────────────────────────────────────────────────────
+SAGE_ROOT="${SAGE_ROOT:-$HOME/sage}"
+COMMANDS_DIR="$HOME/.claude/commands"
+
+# ── Claude Code: CLAUDE.md ────────────────────────────────────────────
+echo ""
 echo "  Checking Claude Code..."
 
 if [ "$MODE" = "--global" ]; then
@@ -33,12 +39,52 @@ else:
     os.remove('$CC_TARGET')
     print('  ✓ $CC_TARGET removed (was empty)')
 "
-    REMOVED+=("Claude Code (CLAUDE.md)")
+    REMOVED+=("CLAUDE.md")
 else
-    SKIPPED+=("Claude Code ($CC_TARGET not found)")
+    SKIPPED+=("CLAUDE.md ($CC_TARGET not found)")
 fi
 
-# ── Claude Desktop ────────────────────────────────────────────────────
+# ── Claude Code: MCP entry in ~/.claude.json ─────────────────────────
+CC_MCP="$HOME/.claude.json"
+if [ -f "$CC_MCP" ]; then
+    python3 - << 'PYEOF'
+import json, os
+path = os.path.expanduser("~/.claude.json")
+try:
+    with open(path) as f:
+        config = json.load(f)
+    removed = config.get("mcpServers", {}).pop("sage", None)
+    with open(path, "w") as f:
+        json.dump(config, f, indent=2)
+    if removed:
+        print("  ✓ sage MCP removed from ~/.claude.json")
+    else:
+        print("  · sage was not in ~/.claude.json")
+except Exception as e:
+    print(f"  · Error updating ~/.claude.json: {e}")
+PYEOF
+    REMOVED+=("Claude Code MCP (~/.claude.json)")
+else
+    SKIPPED+=("~/.claude.json (not found)")
+fi
+
+# ── Claude Code: slash commands ───────────────────────────────────────
+COMMANDS_REMOVED=0
+for skill in sage-init sage-ingest sage-lint sage-research sage-capture sage-relocate sage-meeting sage-memory; do
+    if [ -f "$COMMANDS_DIR/${skill}.md" ]; then
+        rm -f "$COMMANDS_DIR/${skill}.md"
+        COMMANDS_REMOVED=$((COMMANDS_REMOVED + 1))
+    fi
+done
+if [ "$COMMANDS_REMOVED" -gt 0 ]; then
+    echo "  ✓ $COMMANDS_REMOVED slash commands removed from $COMMANDS_DIR/"
+    REMOVED+=("slash commands")
+else
+    echo "  · No sage slash commands found in $COMMANDS_DIR/"
+fi
+
+# ── Claude Desktop: MCP ───────────────────────────────────────────────
+echo ""
 echo "  Checking Claude Desktop..."
 
 DESKTOP_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
@@ -59,18 +105,51 @@ try:
 except Exception as e:
     print(f"  · Error: {e}")
 PYEOF
-    REMOVED+=("Claude Desktop (MCP config)")
+    REMOVED+=("Claude Desktop MCP")
 else
     SKIPPED+=("Claude Desktop (config not found)")
 fi
 
+# ── LaunchAgent (macOS) ───────────────────────────────────────────────
+PLIST="$HOME/Library/LaunchAgents/com.sage.daily-maintenance.plist"
+if [ -f "$PLIST" ]; then
+    launchctl unload "$PLIST" 2>/dev/null || true
+    rm -f "$PLIST"
+    echo "  ✓ LaunchAgent removed (com.sage.daily-maintenance)"
+    REMOVED+=("LaunchAgent")
+fi
+
+# ── sage runtime files (skills + ops script, not wiki/sources) ────────
+RUNTIME_REMOVED=0
+for skill in sage-init sage-ingest sage-lint sage-research sage-capture sage-relocate sage-meeting sage-memory; do
+    if [ -f "$SAGE_ROOT/skills/${skill}.md" ]; then
+        rm -f "$SAGE_ROOT/skills/${skill}.md"
+        RUNTIME_REMOVED=$((RUNTIME_REMOVED + 1))
+    fi
+done
+if [ "$RUNTIME_REMOVED" -gt 0 ]; then
+    echo "  ✓ $RUNTIME_REMOVED skill files removed from $SAGE_ROOT/skills/"
+    # Remove skills dir if now empty
+    rmdir "$SAGE_ROOT/skills" 2>/dev/null && echo "  ✓ $SAGE_ROOT/skills/ removed (empty)" || true
+    REMOVED+=("skill files")
+fi
+
+if [ -f "$SAGE_ROOT/scripts/sage-operations.py" ]; then
+    rm -f "$SAGE_ROOT/scripts/sage-operations.py"
+    echo "  ✓ sage-operations.py removed from $SAGE_ROOT/scripts/"
+    rmdir "$SAGE_ROOT/scripts" 2>/dev/null && echo "  ✓ $SAGE_ROOT/scripts/ removed (empty)" || true
+    REMOVED+=("sage-operations.py")
+fi
+
 # ── Summary ───────────────────────────────────────────────────────────
 echo ""
-[ ${#REMOVED[@]} -gt 0 ] && echo "  Removed: ${REMOVED[*]}"
+if [ ${#REMOVED[@]} -gt 0 ]; then
+    echo "  Removed: ${REMOVED[*]}"
+fi
 if [ ${#SKIPPED[@]} -gt 0 ]; then
     echo "  Skipped:"
     for item in "${SKIPPED[@]}"; do echo "    · $item"; done
 fi
 echo ""
-echo "  Wiki data at ~/sage/ was not touched."
+echo "  Wiki data at $SAGE_ROOT/wiki/ and $SAGE_ROOT/sources/ was not touched."
 echo "  Restart Claude Code / Claude Desktop to apply."
