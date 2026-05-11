@@ -1,0 +1,146 @@
+flowchart TB
+    %% ── SETUP ──────────────────────────────────────────────────────────
+    subgraph SETUP["🚀 One-time Setup"]
+        direction TB
+        install["install.sh\nregisters slash commands"]
+        init["/sage-init\nOnboarding Wizard"]
+        q["6 Questions\nname · role · goals\ntopics · depth · entities"]
+        webseed["Web Seeding\nWebSearch + WebFetch\n2–3 articles per topic"]
+    end
+
+    %% ── MEMORY LAYER ────────────────────────────────────────────────────
+    subgraph MEMORY["🧠 wiki/sage-memory/  (identity + memory)"]
+        direction LR
+        SOUL["SOUL.md\nwhat: goals, topics, depth rules"]
+        USER["USER.md\nwho: name, role, background,\ntracked entities"]
+        MEM["MEMORY.md\nhigh-signal lessons\nappend-only · selective"]
+        HB["HEARTBEAT.md\nwiki health snapshot\nauto-updated by lint"]
+    end
+
+    %% ── RAW SOURCES ─────────────────────────────────────────────────────
+    subgraph INPUTS["📥 Raw Sources  (raw/)"]
+        direction TB
+        dropped["User-dropped files\narticles · notes · PDFs · clippings"]
+        seed["raw/seed/<topic>/\nweb-fetched by sage-init\nor sage-research"]
+        conv["raw/<project>/\ncaptured conversation knowledge"]
+    end
+
+    %% ── OPS (no LLM) ───────────────────────────────────────────────────
+    subgraph OPS["⚙️  ops.py  (deterministic, no LLM)"]
+        direction LR
+        discover["discover\nfind uningest files"]
+        rebuild["rebuild-backlinks\nregenerate _backlinks.json"]
+        lintfix["lint --fix\nauto-fix confidence gaps\ndead links · index drift"]
+    end
+
+    %% ── WIKI ────────────────────────────────────────────────────────────
+    subgraph WIKI["📚 wiki/  (LLM-maintained knowledge)"]
+        direction TB
+        sources["sources/\none page per ingested source"]
+        concepts["concepts/\ntopic articles · cross-linked"]
+        entities["entities/\npeople · orgs · projects · tools"]
+        comparisons["comparisons/  explorations/"]
+        index["index.md\nmaster catalog"]
+        bl["_backlinks.json\nforward + reverse link index"]
+    end
+
+    %% ── SKILLS ─────────────────────────────────────────────────────────
+    subgraph SKILLS["🛠  Skills  (Claude reads memory layer before each)"]
+        direction TB
+        ingest["/sage-ingest\nraw → structured wiki pages\ncite · link · cross-ref"]
+        research["/sage-research\nfind web sources for topic\ngap analysis · surfaced findings"]
+        capture["/sage-capture\nconversation → raw files\nfor future ingest"]
+        lint["/sage-lint\nhealth checks · auto-fix\nupdate HEARTBEAT.md"]
+        remember["sage remember <thing>\nappend lesson to MEMORY.md\nno confirmation needed"]
+    end
+
+    %% ── QUERY ───────────────────────────────────────────────────────────
+    subgraph QUERY["🔍 Query"]
+        direction LR
+        q2["sage query <topic>\nread index.md or API"]
+        server["wiki_server.py\nlocalhost:3000\nfulltext + graph search"]
+    end
+
+    %% ── SETUP FLOW ──────────────────────────────────────────────────────
+    install --> init
+    init --> q
+    q --> SOUL
+    q --> USER
+    init -->|"creates empty skeletons"| MEM
+    init -->|"creates empty skeleton"| HB
+    init --> webseed
+    webseed --> seed
+
+    %% ── MEMORY FEEDS SKILLS ─────────────────────────────────────────────
+    SOUL -. "depth · focus · domain interests" .-> ingest
+    USER -. "assumed knowledge · entity tracking" .-> ingest
+    MEM  -. "don't re-litigate settled conclusions" .-> ingest
+    HB   -. "note if source fills queued gap" .-> ingest
+
+    SOUL -. "domain · depth preference" .-> research
+    USER -. "background · level" .-> research
+    MEM  -. "skip known conclusions" .-> research
+    HB   -. "check research queue" .-> research
+
+    SOUL -. "what's worth capturing" .-> capture
+    USER -. "detail level" .-> capture
+    MEM  -. "avoid duplicate pages" .-> capture
+
+    %% ── INGEST FLOW ─────────────────────────────────────────────────────
+    dropped --> ingest
+    seed    --> ingest
+    conv    --> ingest
+    ingest  --> discover
+    discover --> sources
+    ingest  --> concepts
+    ingest  --> entities
+    ingest  --> comparisons
+    ingest  --> index
+    ingest  --> rebuild
+    rebuild --> bl
+
+    %% ── RESEARCH FLOW ───────────────────────────────────────────────────
+    research -->|"WebSearch + WebFetch"| seed
+    research -->|"gap found → queue"| HB
+
+    %% ── CAPTURE FLOW ────────────────────────────────────────────────────
+    capture --> conv
+
+    %% ── LINT FLOW ───────────────────────────────────────────────────────
+    lint --> lintfix
+    lintfix --> WIKI
+    lint -->|"health stats · issues · queue"| HB
+    lint --> rebuild
+
+    %% ── MEMORY UPDATE ───────────────────────────────────────────────────
+    remember --> MEM
+    ingest  -. "proactive pitch\n(user confirms)" .-> MEM
+    research -. "proactive pitch\n(user confirms)" .-> MEM
+
+    %% ── QUERY FLOW ──────────────────────────────────────────────────────
+    WIKI --> q2
+    WIKI --> server
+
+    %% ── DAILY MAINTENANCE ───────────────────────────────────────────────
+    daily(["daily LaunchAgent\n6:00pm\nops.py lint --fix"])
+    daily --> lintfix
+    daily --> HB
+
+    %% ── STYLES ──────────────────────────────────────────────────────────
+    classDef memory fill:#1a1a2e,stroke:#7b68ee,color:#e0e0ff
+    classDef skill  fill:#0d2137,stroke:#4da6ff,color:#cce5ff
+    classDef wiki   fill:#0d2a1a,stroke:#4dbb7a,color:#ccf0dd
+    classDef raw    fill:#2a1a0d,stroke:#cc8844,color:#ffe0cc
+    classDef ops    fill:#1a1a1a,stroke:#888888,color:#cccccc
+    classDef query  fill:#1a0d2a,stroke:#aa66dd,color:#eeccff
+    classDef setup  fill:#2a1a00,stroke:#ddaa00,color:#fff0cc
+    classDef daily  fill:#111111,stroke:#666666,color:#aaaaaa
+
+    class SOUL,USER,MEM,HB memory
+    class ingest,research,capture,lint,remember skill
+    class sources,concepts,entities,comparisons,index,bl wiki
+    class dropped,seed,conv raw
+    class discover,rebuild,lintfix ops
+    class q2,server query
+    class install,init,q,webseed setup
+    class daily daily
