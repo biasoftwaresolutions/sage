@@ -134,11 +134,18 @@ if [ "$RUNTIME_REMOVED" -gt 0 ]; then
     REMOVED+=("skill files")
 fi
 
-if [ -f "$SAGE_ROOT/scripts/sage-operations.py" ]; then
-    rm -f "$SAGE_ROOT/scripts/sage-operations.py"
-    echo "  ✓ sage-operations.py removed from $SAGE_ROOT/scripts/"
+# Remove all sage-installed scripts (ops.py is legacy name)
+SCRIPTS_REMOVED=0
+for f in sage-operations.py ops.py daily-maintenance.sh install-launchagent.sh install-skills.sh; do
+    if [ -f "$SAGE_ROOT/scripts/$f" ]; then
+        rm -f "$SAGE_ROOT/scripts/$f"
+        SCRIPTS_REMOVED=$((SCRIPTS_REMOVED + 1))
+    fi
+done
+if [ "$SCRIPTS_REMOVED" -gt 0 ]; then
+    echo "  ✓ $SCRIPTS_REMOVED script(s) removed from $SAGE_ROOT/scripts/"
     rmdir "$SAGE_ROOT/scripts" 2>/dev/null && echo "  ✓ $SAGE_ROOT/scripts/ removed (empty)" || true
-    REMOVED+=("sage-operations.py")
+    REMOVED+=("scripts")
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────
