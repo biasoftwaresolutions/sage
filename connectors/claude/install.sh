@@ -135,4 +135,3 @@ fi
 echo ""
 echo "Done."
 echo "  Drop sources into ~/sage/sources/ and say 'sage ingest' to process them."
-echo "  View wiki: python3 ~/sage/wiki_server.py"

@@ -36,9 +36,6 @@ fi
 
 # ── Code files: always update ─────────────────────────────────────────
 # These are developer-maintained and should always reflect the latest version.
-cp "$REPO_ROOT/wiki_server.py" "$TARGET_DIR/wiki_server.py"
-echo "  Updated wiki_server.py"
-
 cp "$SCRIPT_DIR/sage.md" "$TARGET_DIR/sage.md"
 echo "  Updated sage.md"
 
@@ -75,12 +72,20 @@ if [ "$IS_UPDATE" = false ]; then
     fi
 
     if [ ! -f "$TARGET_DIR/wiki/index.md" ]; then
-        cp "$REPO_ROOT/wiki/index.md" "$TARGET_DIR/wiki/index.md"
+        if [ -f "$REPO_ROOT/wiki/index.md" ]; then
+            cp "$REPO_ROOT/wiki/index.md" "$TARGET_DIR/wiki/index.md"
+        else
+            printf "# Sage Wiki\n\nWiki index. Run \`sage ingest\` to populate.\n" > "$TARGET_DIR/wiki/index.md"
+        fi
         echo "  Created wiki/index.md"
     fi
 
     if [ ! -f "$TARGET_DIR/wiki/log.md" ]; then
-        cp "$REPO_ROOT/wiki/log.md" "$TARGET_DIR/wiki/log.md"
+        if [ -f "$REPO_ROOT/wiki/log.md" ]; then
+            cp "$REPO_ROOT/wiki/log.md" "$TARGET_DIR/wiki/log.md"
+        else
+            printf "# Sage Ingest Log\n\n" > "$TARGET_DIR/wiki/log.md"
+        fi
         echo "  Created wiki/log.md"
     fi
 
