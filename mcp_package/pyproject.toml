@@ -1,20 +1,20 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "sage-mcp"
 version = "1.0.5"
 description = "MCP server for the sage personal knowledge wiki — search, context, and graph traversal"
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 dependencies = ["mcp>=1.0.0"]
 keywords = ["mcp", "knowledge-base", "wiki", "llm", "ai"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -23,18 +23,11 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/gowtham0992/sage"
-Repository = "https://github.com/gowtham0992/sage"
+Homepage = "https://github.com/biaadmin/sage"
+Repository = "https://github.com/biaadmin/sage"
 
 [project.scripts]
 sage-mcp = "sage_mcp.server:main"
 
-[tool.hatch.build.targets.wheel]
-packages = ["sage_mcp"]
-
-[tool.hatch.build.targets.sdist]
-exclude = [
-    ".mcpregistry_*",
-    "*.token",
-    "dist/",
-]
+[tool.setuptools.packages.find]
+include = ["sage_mcp*"]
