@@ -119,7 +119,13 @@ if [ -f "$PLIST" ]; then
     REMOVED+=("LaunchAgent")
 fi
 
-# ── sage runtime files (skills + ops script, not wiki/sources) ────────
+# ── sage runtime files (skills, scripts, sage.md — not wiki/sources) ──
+if [ -f "$SAGE_ROOT/sage.md" ]; then
+    rm -f "$SAGE_ROOT/sage.md"
+    echo "  ✓ sage.md removed from $SAGE_ROOT/"
+    REMOVED+=("sage.md")
+fi
+
 RUNTIME_REMOVED=0
 for skill in sage-init sage-ingest sage-lint sage-research sage-capture sage-relocate sage-meeting sage-memory; do
     if [ -f "$SAGE_ROOT/skills/${skill}.md" ]; then
