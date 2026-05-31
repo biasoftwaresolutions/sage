@@ -39,6 +39,51 @@ If `new_count` is 0: say "No new files to ingest." Stop.
 
 Read the full file.
 
+### Project detection
+
+Inspect the source file's path, not its frontmatter.
+
+- `sources/<project>/<file>` → project is `<project>` (any first-level subfolder counts)
+- `sources/<file>` (top-level) → global; use standard wiki paths
+
+**If project-scoped:**
+- All pages for this source route under `wiki/projects/<name>/` instead of global wiki folders:
+  - Source page: `wiki/projects/<name>/sources/<slug>.md`
+  - Concept pages: `wiki/projects/<name>/concepts/<slug>.md`
+  - Entity pages: `wiki/projects/<name>/entities/<slug>.md`
+  - Comparison pages: `wiki/projects/<name>/comparisons/<slug>.md`
+  - Exploration pages: `wiki/projects/<name>/explorations/<slug>.md`
+- Add `project: <name>` to the frontmatter of every generated page.
+- If `wiki/projects/<name>/` does not yet exist, create the directory structure and its `index.md` using this template:
+
+```markdown
+---
+type: project-index
+title: "<Name>"
+project: "<name>"
+date_created: "<today>"
+date_updated: "<today>"
+---
+
+# <Name>
+
+*Project-scoped wiki. Sources from `sources/<name>/` appear here.*
+
+Last updated: <today> | 0 pages | 0 sources
+
+## Sources
+
+## Concepts
+
+## Entities
+
+## Comparisons
+
+## Explorations
+```
+
+**If global (top-level source):** use standard wiki paths as described below.
+
 ### Memory extraction
 
 Before creating any wiki pages, scan the source for personal context signals. If `wiki/sage-memory/` doesn't exist, skip this sub-step.
@@ -77,7 +122,7 @@ Then create or update wiki pages as described below.
 
 ### Source page
 
-Path: `wiki/sources/<slug>.md`
+Path: `wiki/sources/<slug>.md` (global) or `wiki/projects/<name>/sources/<slug>.md` (project)
 Slug = title lowercased, spaces→hyphens, no special chars.
 
 ```markdown
@@ -91,6 +136,7 @@ source_url: "<URL or empty>"
 tags: [<2-4 relevant tags>]
 confidence: high
 aliases: []
+project: "<name — omit for global sources>"
 ---
 
 # <title>
@@ -120,7 +166,7 @@ aliases: []
 
 ### Concept page
 
-Path: `wiki/concepts/<slug>.md`
+Path: `wiki/concepts/<slug>.md` (global) or `wiki/projects/<name>/concepts/<slug>.md` (project)
 
 ```markdown
 ---
@@ -132,6 +178,7 @@ date_updated: "<today>"
 source_count: 1
 tags: [<tags>]
 maturity: seed
+project: "<name — omit for global sources>"
 ---
 
 # <Concept Name>
@@ -169,7 +216,7 @@ maturity: seed
 
 ### Entity page
 
-Path: `wiki/entities/<slug>.md`
+Path: `wiki/entities/<slug>.md` (global) or `wiki/projects/<name>/entities/<slug>.md` (project)
 `entity_type`: `person | organization | project | tool | dataset`
 
 ```markdown
@@ -183,6 +230,7 @@ date_updated: "<today>"
 tags: [<tags>]
 source_count: 1
 maturity: seed
+project: "<name — omit for global sources>"
 ---
 
 # <Name>
@@ -213,7 +261,7 @@ maturity: seed
 
 ### Comparison page
 
-Path: `wiki/comparisons/<slug>.md`
+Path: `wiki/comparisons/<slug>.md` (global) or `wiki/projects/<name>/comparisons/<slug>.md` (project)
 Create only when source explicitly compares two or more things.
 
 ```markdown
@@ -261,7 +309,7 @@ maturity: seed
 
 ### Exploration page
 
-Path: `wiki/explorations/<slug>.md`
+Path: `wiki/explorations/<slug>.md` (global) or `wiki/projects/<name>/explorations/<slug>.md` (project)
 Create when user asks a question and wants the answer filed back.
 
 ```markdown
@@ -298,12 +346,13 @@ tags: [<tags>]
 
 For each significant concept, entity, person, project, or tool in the source:
 
-- Check if `wiki/concepts/<slug>.md` or `wiki/entities/<slug>.md` exists
+- Determine the base path: `wiki/` (global) or `wiki/projects/<name>/` (project-scoped)
+- Check if `<base>/concepts/<slug>.md` or `<base>/entities/<slug>.md` exists
 - **If exists:** open it, add new claims under relevant sections, increment `source_count`, update `date_updated`, advance `maturity`:
   - seed → growing at 2 sources
   - growing → mature at 4 sources
   - mature → established at 7 sources
-- **If not exists:** create with `maturity: seed`, `source_count: 1`
+- **If not exists:** create with `maturity: seed`, `source_count: 1`, and include `project:` field if project-scoped
 
 Only create a page if you can write a real TLDR + 2-paragraph Overview. Otherwise fold the mention into an existing page as a claim.
 
@@ -313,11 +362,19 @@ If a new claim contradicts an existing page, note it in both pages' **Open Quest
 
 ## Step 6 — update index
 
-Open `wiki/index.md`. Add any new pages under the correct category:
+**Global source:** open `wiki/index.md`. Add new pages under the correct category:
 ```
 - [[slug]] — <tldr>. <maturity> · <source_count> sources
 ```
 Update the header: `Last updated: <today> | <N> pages | <N> sources`
+
+**Project-scoped source:** open `wiki/projects/<name>/index.md` instead. Add entries the same way. Also ensure `wiki/index.md` has a `## Projects` section with a link to the project:
+```
+## Projects
+
+- [[<name>]] → [<Name>](projects/<name>/index.md) — <one-line description>
+```
+(Add only if the project is not yet listed in the global index.)
 
 ## Step 7 — rebuild knowledge graph
 

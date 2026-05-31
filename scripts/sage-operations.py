@@ -154,6 +154,30 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _get_page_category(rel: str) -> str:
+    """Return category folder (concepts/entities/etc) regardless of project nesting."""
+    parts = rel.replace("\\", "/").split("/")
+    if parts[0] == "projects" and len(parts) >= 4:
+        return parts[2]  # projects/<name>/<category>/file.md
+    return parts[0]  # <category>/file.md
+
+
+def _get_page_project(rel: str) -> "str | None":
+    """Return project name if page lives under wiki/projects/, else None."""
+    parts = rel.replace("\\", "/").split("/")
+    if parts[0] == "projects" and len(parts) >= 3:
+        return parts[1]
+    return None
+
+
+def _get_source_project(source_rel: str) -> "str | None":
+    """Return project name if source lives under sources/<project>/, else None."""
+    parts = source_rel.replace("\\", "/").split("/")
+    if len(parts) >= 3 and parts[0] == "sources":
+        return parts[1]
+    return None
+
+
 # ── auto-fix routines (no LLM) ────────────────────────────────────────
 
 def _fix_confidence_gaps(pages: dict[str, dict]) -> list[str]:
@@ -198,33 +222,66 @@ def _fix_dead_links(pages: dict[str, dict], page_names: set[str]) -> list[str]:
 
 
 def _fix_index_drift(pages: dict[str, dict], page_names: set[str]) -> list[str]:
-    """Add pages missing from index.md."""
+    """Add pages missing from their index (global index or project-scoped index)."""
     index_path = WIKI_DIR / "index.md"
     if not index_path.exists():
         return []
     index_text = index_path.read_text(encoding="utf-8", errors="replace")
+
+    # Cache project index texts to avoid repeated reads/writes
+    proj_index_cache: dict[str, tuple[Path, str]] = {}
+    projects_dir = WIKI_DIR / "projects"
+    if projects_dir.exists():
+        for proj_dir in projects_dir.iterdir():
+            if proj_dir.is_dir():
+                pidx = proj_dir / "index.md"
+                if pidx.exists():
+                    proj_index_cache[proj_dir.name] = (pidx, pidx.read_text(encoding="utf-8", errors="replace"))
+
     fixed = []
-    additions: list[str] = []
+    global_additions: list[str] = []
+    project_additions: dict[str, list[str]] = {}
+
     for stem in sorted(page_names):
-        if f"[[{stem}]]" not in index_text and f"[[{stem}|" not in index_text:
-            page = pages[stem]
-            tldr = ""
-            tldr_m = re.search(r">\s*\*\*TLDR:\*\*\s*(.+)", page["body"])
-            if tldr_m:
-                tldr = tldr_m.group(1).strip()
-            maturity = page["meta"].get("maturity", "seed")
-            sc = page["meta"].get("source_count", "1")
-            entry = f"- [[{stem}]] — {tldr or '(no TLDR)'}. {maturity} · {sc} sources"
-            additions.append(entry)
-            fixed.append(f"index_drift: {stem}")
-    if additions:
-        # Append to index under a catch-all section if needed
+        page = pages[stem]
+        proj = _get_page_project(page["rel"])
+        tldr = ""
+        tldr_m = re.search(r">\s*\*\*TLDR:\*\*\s*(.+)", page["body"])
+        if tldr_m:
+            tldr = tldr_m.group(1).strip()
+        maturity = page["meta"].get("maturity", "seed")
+        sc = page["meta"].get("source_count", "1")
+        entry = f"- [[{stem}]] — {tldr or '(no TLDR)'}. {maturity} · {sc} sources"
+
+        if proj:
+            if proj not in proj_index_cache:
+                continue  # project index doesn't exist yet; ingest skill creates it
+            _, pidx_text = proj_index_cache[proj]
+            if f"[[{stem}]]" not in pidx_text and f"[[{stem}|" not in pidx_text:
+                project_additions.setdefault(proj, []).append(entry)
+                fixed.append(f"index_drift: {stem}")
+        else:
+            if f"[[{stem}]]" not in index_text and f"[[{stem}|" not in index_text:
+                global_additions.append(entry)
+                fixed.append(f"index_drift: {stem}")
+
+    if global_additions:
         if "## Uncategorized" not in index_text:
             index_text = index_text.rstrip() + "\n\n## Uncategorized\n"
         else:
             index_text = index_text.rstrip() + "\n"
-        index_text += "\n".join(additions) + "\n"
+        index_text += "\n".join(global_additions) + "\n"
         index_path.write_text(index_text, encoding="utf-8")
+
+    for proj, additions in project_additions.items():
+        pidx_path, pidx_text = proj_index_cache[proj]
+        if "## Uncategorized" not in pidx_text:
+            pidx_text = pidx_text.rstrip() + "\n\n## Uncategorized\n"
+        else:
+            pidx_text = pidx_text.rstrip() + "\n"
+        pidx_text += "\n".join(additions) + "\n"
+        pidx_path.write_text(pidx_text, encoding="utf-8")
+
     return fixed
 
 
@@ -348,8 +405,15 @@ def cmd_lint(args) -> int:
             except (ValueError, IndexError):
                 pass
 
-        if f"[[{stem}]]" not in index_text and f"[[{stem}|" not in index_text:
-            issues.append({"type": "index_drift", "page": stem})
+        proj = _get_page_project(page["rel"])
+        if proj:
+            proj_idx = WIKI_DIR / "projects" / proj / "index.md"
+            proj_idx_text = proj_idx.read_text(encoding="utf-8", errors="replace") if proj_idx.exists() else ""
+            if f"[[{stem}]]" not in proj_idx_text and f"[[{stem}|" not in proj_idx_text:
+                issues.append({"type": "index_drift", "page": stem, "project": proj})
+        else:
+            if f"[[{stem}]]" not in index_text and f"[[{stem}|" not in index_text:
+                issues.append({"type": "index_drift", "page": stem})
 
     for stem in page_names:
         if not backlinks.get(stem):
@@ -357,7 +421,7 @@ def cmd_lint(args) -> int:
 
     for stem, page in pages.items():
         ptype = page["meta"].get("type", "")
-        cat = page["rel"].split("/")[0]
+        cat = _get_page_category(page["rel"])
         if ptype == "entity" and cat == "concepts":
             issues.append({"type": "misclassified", "page": stem, "in": cat, "should_be": "entities"})
         if ptype == "concept" and cat == "entities":
@@ -486,6 +550,7 @@ def cmd_discover(_args) -> int:
                 ingested.add(sf.lower())
 
     new_files: list[str] = []
+    by_project: dict[str, list[str]] = {"global": []}
     if SOURCES_DIR.exists():
         for f in sorted(SOURCES_DIR.rglob("*")):
             if not f.is_file():
@@ -495,12 +560,18 @@ def cmd_discover(_args) -> int:
                 continue
             if rel.lower() not in ingested:
                 new_files.append(rel)
+                proj = _get_source_project(rel)
+                if proj:
+                    by_project.setdefault(proj, []).append(rel)
+                else:
+                    by_project["global"].append(rel)
 
     result = {
         "sage_root": str(ROOT),
         "new_files": new_files,
         "new_count": len(new_files),
         "ingested_count": len(ingested),
+        "by_project": {k: v for k, v in by_project.items() if v},
     }
     print(json.dumps(result, indent=2))
     return 0
@@ -581,11 +652,17 @@ def cmd_status(_args) -> int:
     pages = _load_wiki_pages()
     by_type: dict[str, int] = {}
     by_maturity: dict[str, int] = {}
+    by_project: dict[str, int] = {"global": 0}
     for page in pages.values():
         t = page["meta"].get("type", "unknown")
         by_type[t] = by_type.get(t, 0) + 1
         m = page["meta"].get("maturity", "unknown")
         by_maturity[m] = by_maturity.get(m, 0) + 1
+        proj = _get_page_project(page["rel"])
+        if proj:
+            by_project[proj] = by_project.get(proj, 0) + 1
+        else:
+            by_project["global"] += 1
 
     raw_count = 0
     if SOURCES_DIR.exists():
@@ -605,6 +682,7 @@ def cmd_status(_args) -> int:
         "page_count": len(pages),
         "by_type": by_type,
         "by_maturity": by_maturity,
+        "by_project": by_project,
         "raw_files": raw_count,
         "uningestd_files": discover["new_count"],
     }

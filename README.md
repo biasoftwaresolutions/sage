@@ -132,6 +132,8 @@ Supported source types:
 
 The agent creates a source page in `wiki/sources/`, then creates or updates concept, entity, and comparison pages as needed.
 
+**Project-scoped ingest:** drop sources into `sources/<project-name>/` instead of `sources/`. The project name is inferred from the folder — no frontmatter required. All pages generated from that source go under `wiki/projects/<project-name>/` instead of the global wiki. The project is created automatically on first ingest. Cross-project wikilinks work normally.
+
 During ingest, the agent scans for durable personal context — your role, active projects, key relationships — and selectively updates `wiki/sage-memory/USER.md` and `SOUL.md` (high bar: only unambiguous, non-transient facts; merges into existing lines rather than appending). Name is never inferred or stored automatically. High-signal decisions or lessons are pitched for `MEMORY.md` before writing.
 
 ### Query
@@ -320,15 +322,24 @@ After install, your wiki lives at `~/sage/` (or project dir with `--project`):
 ```
 ~/sage/
 ├── sources/                       ← your source documents (immutable, you add these)
+│   └── <project>/             ← optional: drop project-specific sources here
 ├── wiki/                      ← compiled knowledge (AI-maintained, never edit manually)
 │   ├── index.md               ← master catalog by category
 │   ├── _knowledge-graph.json        ← reverse + forward link index (auto-generated)
 │   ├── log.md                 ← append-only operation history
-│   ├── sources/               ← one page per ingested source
-│   ├── concepts/              ← topic articles
-│   ├── entities/              ← people, orgs, projects, tools
-│   ├── comparisons/           ← side-by-side analyses
-│   ├── explorations/          ← filed query results
+│   ├── sources/               ← one page per ingested source (global)
+│   ├── concepts/              ← topic articles (global)
+│   ├── entities/              ← people, orgs, projects, tools (global)
+│   ├── comparisons/           ← side-by-side analyses (global)
+│   ├── explorations/          ← filed query results (global)
+│   ├── projects/              ← project-scoped namespaces
+│   │   └── <project-name>/    ← one folder per project
+│   │       ├── index.md       ← project catalog
+│   │       ├── sources/
+│   │       ├── concepts/
+│   │       ├── entities/
+│   │       ├── comparisons/
+│   │       └── explorations/
 │   ├── meetings/              ← one page per captured meeting
 │   ├── action-items/          ← open.md and closed.md lifecycle tracking
 │   └── sage-memory/           ← identity and memory files (created by sage init)
@@ -358,6 +369,7 @@ Every wiki page uses YAML frontmatter:
 | `aliases` | list | Alternate names / abbreviations |
 | `tags` | list | Topic tags |
 | `date_created` / `date_updated` | ISO date | Lifecycle timestamps |
+| `project` | string | Project name — present on all pages under `wiki/projects/<name>/` |
 
 Pages use `[[wikilink]]` syntax (Obsidian-compatible) and inline confidence tags: `[confidence: high]`, `[confidence: medium]`, `[confidence: low]`.
 
