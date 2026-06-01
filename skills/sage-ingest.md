@@ -47,39 +47,45 @@ Inspect the source file's path, not its frontmatter.
 - `sources/<file>` (top-level) → global; use standard wiki paths
 
 **If project-scoped:**
-- All pages for this source route under `wiki/projects/<name>/` instead of global wiki folders:
-  - Source page: `wiki/projects/<name>/sources/<slug>.md`
-  - Concept pages: `wiki/projects/<name>/concepts/<slug>.md`
-  - Entity pages: `wiki/projects/<name>/entities/<slug>.md`
-  - Comparison pages: `wiki/projects/<name>/comparisons/<slug>.md`
-  - Exploration pages: `wiki/projects/<name>/explorations/<slug>.md`
-- Add `project: <name>` to the frontmatter of every generated page.
-- If `wiki/projects/<name>/` does not yet exist, create the directory structure and its `index.md` using this template:
+- Create a project folder hub at `wiki/projects/<name>/` with an `index.md` (see template below).
+- Project-specific analysis pages (source page, dossier, research, validation) live INSIDE the project folder as flat files.
+- **Concepts and entities default to GLOBAL** (`wiki/concepts/`, `wiki/entities/`) — real-world entities and domain concepts are reusable across projects. Exception: project-specific analysis pages masquerading as concepts (opinionated, no life outside this project) go in `wiki/projects/<name>/concepts/` or `wiki/projects/<name>/entities/` instead. See Step 4 for the decision rule.
+- If `wiki/projects/<name>/` does not yet exist, create `index.md` using this template:
 
 ```markdown
 ---
-type: project-index
-title: "<Name>"
-project: "<name>"
+type: project
+title: "<Project Name>"
+project_slug: "<name>"
+status: "active"
 date_created: "<today>"
 date_updated: "<today>"
+tags: [<2-4 tags>]
 ---
 
-# <Name>
+# <Project Name>
 
-*Project-scoped wiki. Sources from `sources/<name>/` appear here.*
+> **TLDR:** <one sentence — what this project is and where it stands>
 
-Last updated: <today> | 0 pages | 0 sources
+## Pages
 
-## Sources
+- [[dossier]] — full analysis
+- [[research]] — market research and competitors
+- [[validation]] — plan and next steps
 
-## Concepts
+## Key Findings
 
-## Entities
+- <most important finding>
+- <primary risk or blocker>
 
-## Comparisons
+## Related
 
-## Explorations
+- [[<entity-slug>]] — <name> (global entity)
+- [[<concept-slug>]] — <domain concept> (global concept)
+
+## Raw Sources
+
+`sources/<name>/`
 ```
 
 **If global (top-level source):** use standard wiki paths as described below.
@@ -122,7 +128,7 @@ Then create or update wiki pages as described below.
 
 ### Source page
 
-Path: `wiki/sources/<slug>.md` (global) or `wiki/projects/<name>/sources/<slug>.md` (project)
+Path: `wiki/sources/<slug>.md` (global) or `wiki/projects/<name>/<slug>.md` (project — flat file in project folder)
 Slug = title lowercased, spaces→hyphens, no special chars.
 
 ```markdown
@@ -166,7 +172,7 @@ project: "<name — omit for global sources>"
 
 ### Concept page
 
-Path: `wiki/concepts/<slug>.md` (global) or `wiki/projects/<name>/concepts/<slug>.md` (project)
+Path: `wiki/concepts/<slug>.md`
 
 ```markdown
 ---
@@ -178,7 +184,6 @@ date_updated: "<today>"
 source_count: 1
 tags: [<tags>]
 maturity: seed
-project: "<name — omit for global sources>"
 ---
 
 # <Concept Name>
@@ -216,7 +221,7 @@ project: "<name — omit for global sources>"
 
 ### Entity page
 
-Path: `wiki/entities/<slug>.md` (global) or `wiki/projects/<name>/entities/<slug>.md` (project)
+Path: `wiki/entities/<slug>.md`
 `entity_type`: `person | organization | project | tool | dataset`
 
 ```markdown
@@ -230,7 +235,6 @@ date_updated: "<today>"
 tags: [<tags>]
 source_count: 1
 maturity: seed
-project: "<name — omit for global sources>"
 ---
 
 # <Name>
@@ -346,13 +350,27 @@ tags: [<tags>]
 
 For each significant concept, entity, person, project, or tool in the source:
 
-- Determine the base path: `wiki/` (global) or `wiki/projects/<name>/` (project-scoped)
-- Check if `<base>/concepts/<slug>.md` or `<base>/entities/<slug>.md` exists
+**Decide: global or project-scoped?**
+
+Default is **global** (`wiki/concepts/<slug>.md` or `wiki/entities/<slug>.md`).
+
+Put in **project folder** (`wiki/projects/<name>/concepts/<slug>.md` or `wiki/projects/<name>/entities/<slug>.md`) only when ALL three are true:
+1. The page content is framed as analysis/conclusions, not neutral encyclopedic facts
+2. The claims are specific to this project's scope (references this project's scoring, validation, or recommendations)
+3. The page has no meaningful life if this project is deleted — another project would not benefit from it
+
+**Always global** (never project-scoped):
+- Real-world entities: companies, people, regulators, geographic zones, tools
+- Domain concepts with meaning independent of this analysis (e.g., "RegTech India", "data licensing")
+- Anything a future unrelated project might link to
+
+**Test:** "Would this page make sense to a reader who has never seen this project?" → yes = global, no = project folder.
+
 - **If exists:** open it, add new claims under relevant sections, increment `source_count`, update `date_updated`, advance `maturity`:
   - seed → growing at 2 sources
   - growing → mature at 4 sources
   - mature → established at 7 sources
-- **If not exists:** create with `maturity: seed`, `source_count: 1`, and include `project:` field if project-scoped
+- **If not exists:** create with `maturity: seed`, `source_count: 1`
 
 Only create a page if you can write a real TLDR + 2-paragraph Overview. Otherwise fold the mention into an existing page as a claim.
 
@@ -368,13 +386,13 @@ If a new claim contradicts an existing page, note it in both pages' **Open Quest
 ```
 Update the header: `Last updated: <today> | <N> pages | <N> sources`
 
-**Project-scoped source:** open `wiki/projects/<name>/index.md` instead. Add entries the same way. Also ensure `wiki/index.md` has a `## Projects` section with a link to the project:
+**Project-scoped source:** ensure `wiki/index.md` has a `### Projects` section with a link to the project hub:
 ```
-## Projects
+### Projects
 
-- [[<name>]] → [<Name>](projects/<name>/index.md) — <one-line description>
+- [[projects/<name>/index|<name>]] — <one-line description>. active
 ```
-(Add only if the project is not yet listed in the global index.)
+(Add only if the project is not yet listed.) Do NOT add individual project sub-pages (dossier, research, validation) to the global index — the project hub page is the only entry point.
 
 ## Step 7 — rebuild knowledge graph
 

@@ -537,10 +537,9 @@ def cmd_discover(_args) -> int:
     ignore_patterns = INGEST_IGNORE
 
     ingested: set[str] = set()
-    sources_dir = WIKI_DIR / "sources"
-    if sources_dir.exists():
-        ref_re = re.compile(r"`(sources/[^`]+)`")
-        for md in sources_dir.rglob("*.md"):
+    ref_re = re.compile(r"`(sources/[^`]+)`")
+    if WIKI_DIR.exists():
+        for md in WIKI_DIR.rglob("*.md"):
             text = md.read_text(encoding="utf-8", errors="replace")
             for m in ref_re.finditer(text):
                 ingested.add(m.group(1).lower())

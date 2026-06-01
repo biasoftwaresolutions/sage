@@ -132,7 +132,7 @@ Supported source types:
 
 The agent creates a source page in `wiki/sources/`, then creates or updates concept, entity, and comparison pages as needed.
 
-**Project-scoped ingest:** drop sources into `sources/<project-name>/` instead of `sources/`. The project name is inferred from the folder — no frontmatter required. All pages generated from that source go under `wiki/projects/<project-name>/` instead of the global wiki. The project is created automatically on first ingest. Cross-project wikilinks work normally.
+**Project-scoped ingest:** drop sources into `sources/<project-name>/` instead of `sources/`. The project name is inferred from the folder — no frontmatter required. Analysis pages (source page, dossier, research, validation) go under `wiki/projects/<project-name>/`. Concepts and entities extracted from the source go in the global `wiki/concepts/` and `wiki/entities/` folders — they are reusable across projects and linked from the project hub. The project is created automatically on first ingest.
 
 During ingest, the agent scans for durable personal context — your role, active projects, key relationships — and selectively updates `wiki/sage-memory/USER.md` and `SOUL.md` (high bar: only unambiguous, non-transient facts; merges into existing lines rather than appending). Name is never inferred or stored automatically. High-signal decisions or lessons are pitched for `MEMORY.md` before writing.
 
@@ -332,14 +332,12 @@ After install, your wiki lives at `~/sage/` (or project dir with `--project`):
 │   ├── entities/              ← people, orgs, projects, tools (global)
 │   ├── comparisons/           ← side-by-side analyses (global)
 │   ├── explorations/          ← filed query results (global)
-│   ├── projects/              ← project-scoped namespaces
-│   │   └── <project-name>/    ← one folder per project
-│   │       ├── index.md       ← project catalog
-│   │       ├── sources/
-│   │       ├── concepts/
-│   │       ├── entities/
-│   │       ├── comparisons/
-│   │       └── explorations/
+│   ├── projects/              ← project-scoped analysis (startup ideas, research initiatives)
+│   │   └── <project-name>/    ← one folder per project; flat files only
+│   │       ├── index.md       ← project hub: verdict, score, links, key findings
+│   │       ├── dossier.md     ← full analysis
+│   │       ├── research.md    ← market research and competitors
+│   │       └── validation.md  ← plan and next steps
 │   ├── meetings/              ← one page per captured meeting
 │   ├── action-items/          ← open.md and closed.md lifecycle tracking
 │   └── sage-memory/           ← identity and memory files (created by sage init)
@@ -363,13 +361,13 @@ Every wiki page uses YAML frontmatter:
 
 | Field | Values | Description |
 |-------|--------|-------------|
-| `type` | `source \| concept \| entity \| comparison \| exploration` | Page type |
+| `type` | `source \| concept \| entity \| comparison \| exploration \| project` | Page type |
 | `maturity` | `seed \| growing \| mature \| established` | seed=1 src, growing=2–3, mature=4–6, established=7+ |
 | `source_count` | integer | Sources this page draws from |
 | `aliases` | list | Alternate names / abbreviations |
 | `tags` | list | Topic tags |
 | `date_created` / `date_updated` | ISO date | Lifecycle timestamps |
-| `project` | string | Project name — present on all pages under `wiki/projects/<name>/` |
+| `project_slug` | string | Project identifier — present on pages under `wiki/projects/<slug>/` |
 
 Pages use `[[wikilink]]` syntax (Obsidian-compatible) and inline confidence tags: `[confidence: high]`, `[confidence: medium]`, `[confidence: low]`.
 
