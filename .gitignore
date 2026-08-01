@@ -60,9 +60,13 @@ uv.lock
 # Editor
 .vscode/
 .idea/
+.obsidian/
 *.swp
 *.swo
 *~
+
+# Tooling scratch
+.playwright-mcp/
 
 # Environment variables
 .env
