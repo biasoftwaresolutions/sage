@@ -48,7 +48,7 @@ Inspect the source file's path, not its frontmatter.
 
 **If project-scoped:**
 - Create a project folder hub at `wiki/projects/<name>/` with an `index.md` (see template below).
-- Project-specific analysis pages (source page, dossier, research, validation) live INSIDE the project folder as flat files.
+- Project-specific analysis pages (source page, brief, research, validation) live INSIDE the project folder as flat files.
 - **Concepts and entities default to GLOBAL** (`wiki/concepts/`, `wiki/entities/`) — real-world entities and domain concepts are reusable across projects. Exception: project-specific analysis pages masquerading as concepts (opinionated, no life outside this project) go in `wiki/projects/<name>/concepts/` or `wiki/projects/<name>/entities/` instead. See Step 4 for the decision rule.
 - If `wiki/projects/<name>/` does not yet exist, create `index.md` using this template:
 
@@ -69,7 +69,7 @@ tags: [<2-4 tags>]
 
 ## Pages
 
-- [[dossier]] — full analysis
+- [[brief]] — full analysis
 - [[research]] — market research and competitors
 - [[validation]] — plan and next steps
 
@@ -392,7 +392,7 @@ Update the header: `Last updated: <today> | <N> pages | <N> sources`
 
 - [[projects/<name>/index|<name>]] — <one-line description>. active
 ```
-(Add only if the project is not yet listed.) Do NOT add individual project sub-pages (dossier, research, validation) to the global index — the project hub page is the only entry point.
+(Add only if the project is not yet listed.) Do NOT add individual project sub-pages (brief, research, validation) to the global index — the project hub page is the only entry point.
 
 ## Step 7 — rebuild knowledge graph
 

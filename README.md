@@ -132,7 +132,7 @@ Supported source types:
 
 The agent creates a source page in `wiki/sources/`, then creates or updates concept, entity, and comparison pages as needed.
 
-**Project-scoped ingest:** drop sources into `sources/<project-name>/` instead of `sources/`. The project name is inferred from the folder — no frontmatter required. Analysis pages (source page, dossier, research, validation) go under `wiki/projects/<project-name>/`. Concepts and entities extracted from the source go in the global `wiki/concepts/` and `wiki/entities/` folders — they are reusable across projects and linked from the project hub. The project is created automatically on first ingest.
+**Project-scoped ingest:** drop sources into `sources/<project-name>/` instead of `sources/`. The project name is inferred from the folder — no frontmatter required. Analysis pages (source page, brief, research, validation) go under `wiki/projects/<project-name>/`. Concepts and entities extracted from the source go in the global `wiki/concepts/` and `wiki/entities/` folders — they are reusable across projects and linked from the project hub. The project is created automatically on first ingest.
 
 During ingest, the agent scans for durable personal context — your role, active projects, key relationships — and selectively updates `wiki/sage-memory/USER.md` and `SOUL.md` (high bar: only unambiguous, non-transient facts; merges into existing lines rather than appending). Name is never inferred or stored automatically. High-signal decisions or lessons are pitched for `MEMORY.md` before writing.
 
@@ -335,7 +335,7 @@ After install, your wiki lives at `~/sage/` (or project dir with `--project`):
 │   ├── projects/              ← project-scoped analysis (startup ideas, research initiatives)
 │   │   └── <project-name>/    ← one folder per project; flat files only
 │   │       ├── index.md       ← project hub: verdict, score, links, key findings
-│   │       ├── dossier.md     ← full analysis
+│   │       ├── brief.md     ← full analysis
 │   │       ├── research.md    ← market research and competitors
 │   │       └── validation.md  ← plan and next steps
 │   ├── meetings/              ← one page per captured meeting
